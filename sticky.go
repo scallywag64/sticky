@@ -16,6 +16,84 @@ type flags struct {
 	purge bool
 }
 
+func listNotes(db *sql.DB) {
+	stmt, err := db.Prepare("SELECT id, note FROM notes")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		var note string
+		err = rows.Scan(&id, &note)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(id, note)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func listNoteById(noteId int, db *sql.DB) {
+	stmt, err := db.Prepare("SELECT id, note FROM notes WHERE id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	var note string
+	err = stmt.QueryRow(noteId).Scan(&id, &note)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(id, note)
+}
+
+func addNote(content string, db *sql.DB) {
+	stmt, err := db.Prepare("INSERT INTO notes(id, note) values(NULL, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(content)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Successfully added note")
+}
+
+func delNotes() {
+	os.Remove("./sticky.db")
+}
+
+func delNote(noteId int, db *sql.DB) {
+	stmt, err := db.Prepare("DELETE FROM notes WHERE id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(noteId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Successfully deleted note #", noteId)
+}
+
 func main() {
 	f := new(flags)
 
@@ -45,72 +123,14 @@ func main() {
 
 	switch {
 	case f.list != 0:
-		stmt, err := db.Prepare("SELECT id, note FROM notes WHERE id = ?")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
-
-		var id int
-		var note string
-		err = stmt.QueryRow(f.list).Scan(&id, &note)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(id, note)
+		listNoteById(f.list, db)
 	case f.add != "":
-		stmt, err := db.Prepare("INSERT INTO notes(id, note) values(NULL, ?)")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(f.add)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Successfully added note")
+		addNote(f.add, db)
 	case f.del != 0:
-		stmt, err := db.Prepare("DELETE FROM notes WHERE id = ?")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(f.del)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Successfully deleted note #", f.del)
+		delNote(f.del, db)
 	case f.purge != false:
-		os.Remove("./sticky.db")
+		delNotes()
 	default:
-		stmt, err := db.Prepare("SELECT id, note FROM notes")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
-
-		rows, err := stmt.Query()
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var id int
-			var note string
-			err = rows.Scan(&id, &note)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(id, note)
-		}
-
-		if err = rows.Err(); err != nil {
-			log.Fatal(err)
-		}
+		listNotes(db)
 	}
 }
