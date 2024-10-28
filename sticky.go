@@ -16,8 +16,19 @@ type flags struct {
 	purge bool
 }
 
+type Note struct {
+	VirtualID int
+	ID        int
+	Content   string
+}
+
 func listNotes(db *sql.DB) {
-	stmt, err := db.Prepare("SELECT id, note FROM notes")
+	stmt, err := db.Prepare(`
+		SELECT
+			ROW_NUMBER() OVER (ORDER BY id) AS virtual_id,
+			note
+		FROM notes;
+	`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,13 +41,13 @@ func listNotes(db *sql.DB) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var id int
+		var virtualId int
 		var note string
-		err = rows.Scan(&id, &note)
+		err = rows.Scan(&virtualId, &note)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(id, note)
+		fmt.Println(virtualId, note)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -45,19 +56,29 @@ func listNotes(db *sql.DB) {
 }
 
 func listNoteById(noteId int, db *sql.DB) {
-	stmt, err := db.Prepare("SELECT id, note FROM notes WHERE id = ?")
+	stmt, err := db.Prepare(`
+		WITH ordered_notes AS (
+			SELECT
+				ROW_NUMBER() OVER (ORDER by id) AS virtual_id,
+				note
+			FROM notes
+		)
+		SELECT *
+		FROM ordered_notes
+		WHERE virtual_id = ?
+	`)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	var id int
+	var virtualId int
 	var note string
-	err = stmt.QueryRow(noteId).Scan(&id, &note)
+	err = stmt.QueryRow(noteId).Scan(&virtualId, &note)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(id, note)
+	fmt.Println(virtualId, note)
 }
 
 func addNote(content string, db *sql.DB) {
@@ -80,7 +101,16 @@ func delNotes() {
 }
 
 func delNote(noteId int, db *sql.DB) {
-	stmt, err := db.Prepare("DELETE FROM notes WHERE id = ?")
+	stmt, err := db.Prepare(`
+		WITH ordered_notes AS (
+			SELECT
+				id,
+				ROW_NUMBER() OVER (ORDER BY id) as virtual_id
+			FROM notes
+		)
+		DELETE FROM notes
+		WHERE id = (SELECT id FROM ordered_notes WHERE virtual_id = ?);
+	`)
 	if err != nil {
 		log.Fatal(err)
 	}
