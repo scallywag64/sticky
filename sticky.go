@@ -11,8 +11,9 @@ import (
 
 type flags struct {
 	add   string
+	get   int
+	list  bool
 	del   int
-	list  int
 	purge bool
 }
 
@@ -87,7 +88,7 @@ func listNotes(db *sql.DB) {
 	}
 }
 
-func listNoteById(noteId int, db *sql.DB) {
+func getNoteById(noteId int, db *sql.DB) {
 	stmt, err := db.Prepare(`
 		WITH ordered_notes AS (
 			SELECT
@@ -170,15 +171,16 @@ func delNote(noteId int, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Successfully deleted note #", noteId)
+	fmt.Printf("Successfully deleted note #%d\n", noteId)
 }
 
 func main() {
 	f := new(flags)
 	flag.StringVar(&f.add, "add", "", "add note")
+	flag.IntVar(&f.get, "get", 0, "get note by id")
+	flag.BoolVar(&f.list, "list", false, "list all notes")
 	flag.IntVar(&f.del, "del", 0, "delete note by id")
-	flag.IntVar(&f.list, "list", 0, "list one note by id, list all notes for id=0")
-	flag.BoolVar(&f.purge, "purge", false, "delete all notes")
+	flag.BoolVar(&f.purge, "purge", false, "delete notes database")
 	flag.Parse()
 
 	db := initDb(dbFilePath)
@@ -188,10 +190,12 @@ func main() {
 	defer db.Close()
 
 	switch {
-	case f.list != 0:
-		listNoteById(f.list, db)
 	case f.add != "":
 		addNote(f.add, db)
+	case f.get != 0:
+		getNoteById(f.get, db)
+	case f.list != false:
+		listNotes(db)
 	case f.del != 0:
 		delNote(f.del, db)
 	case f.purge != false:
