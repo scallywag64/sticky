@@ -22,6 +22,30 @@ type Note struct {
 	Content   string
 }
 
+const dbFilePath = "./sticky.db"
+
+func initDb(path string) *sql.DB {
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	stmt := `
+	CREATE table IF NOT EXISTS notes (
+		id integer NOT NULL PRIMARY KEY,
+		note TEXT
+	);
+	`
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, stmt)
+		return nil
+	}
+
+	return db
+}
+
 func listNotes(db *sql.DB) {
 	stmt, err := db.Prepare(`
 		SELECT
@@ -124,28 +148,6 @@ func delNote(noteId int, db *sql.DB) {
 	fmt.Println("Successfully deleted note #", noteId)
 }
 
-func initDb(path string) *sql.DB {
-	db, err := sql.Open("sqlite3", path)
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-
-	stmt := `
-	CREATE table IF NOT EXISTS notes (
-		id integer NOT NULL PRIMARY KEY,
-		note TEXT
-	);
-	`
-	_, err = db.Exec(stmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, stmt)
-		return nil
-	}
-
-	return db
-}
-
 func main() {
 	f := new(flags)
 	flag.StringVar(&f.add, "add", "", "add note")
@@ -154,7 +156,7 @@ func main() {
 	flag.BoolVar(&f.purge, "purge", false, "delete all notes")
 	flag.Parse()
 
-	db := initDb("./sticky.db")
+	db := initDb(dbFilePath)
 	if db == nil {
 		log.Fatal("Failed to initialize the database")
 	}
