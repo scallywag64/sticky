@@ -121,7 +121,23 @@ func addNote(content string, db *sql.DB) {
 }
 
 func delNotes() {
-	os.Remove("./sticky.db")
+	str := "\x1b[31mThis operation will delete your entire notes database.\x1b[0m\n" +
+		"Type \"y\" to proceed, type anything else to cancel.\n\x1b[34m> \x1b[0m"
+	fmt.Print(str)
+
+	var answer string
+	_, err := fmt.Scan(&answer)
+	if err != nil {
+		fmt.Println("Error reading input:", err)
+		return
+	}
+
+	if answer == "y" {
+		os.Remove("./sticky.db")
+		fmt.Println("\x1b[33mSticky notes database deleted.\x1b[0m")
+	} else {
+		fmt.Println("\x1b[32mSticky notes database preserved.\x1b[0m")
+	}
 }
 
 func delNote(noteId int, db *sql.DB) {
