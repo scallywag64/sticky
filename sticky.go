@@ -124,20 +124,12 @@ func delNote(noteId int, db *sql.DB) {
 	fmt.Println("Successfully deleted note #", noteId)
 }
 
-func main() {
-	f := new(flags)
-
-	flag.StringVar(&f.add, "add", "", "add note")
-	flag.IntVar(&f.del, "del", 0, "delete note by id")
-	flag.IntVar(&f.list, "list", 0, "list one note by id, list all notes for id=0")
-	flag.BoolVar(&f.purge, "purge", false, "delete all notes")
-	flag.Parse()
-
-	db, err := sql.Open("sqlite3", "./sticky.db")
+func initDb(path string) *sql.DB {
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		log.Fatal(err)
+		return nil
 	}
-	defer db.Close()
 
 	stmt := `
 	CREATE table IF NOT EXISTS notes (
@@ -148,8 +140,25 @@ func main() {
 	_, err = db.Exec(stmt)
 	if err != nil {
 		log.Printf("%q: %s\n", err, stmt)
-		return
+		return nil
 	}
+
+	return db
+}
+
+func main() {
+	f := new(flags)
+	flag.StringVar(&f.add, "add", "", "add note")
+	flag.IntVar(&f.del, "del", 0, "delete note by id")
+	flag.IntVar(&f.list, "list", 0, "list one note by id, list all notes for id=0")
+	flag.BoolVar(&f.purge, "purge", false, "delete all notes")
+	flag.Parse()
+
+	db := initDb("./sticky.db")
+	if db == nil {
+		log.Fatal("Failed to initialize the database")
+	}
+	defer db.Close()
 
 	switch {
 	case f.list != 0:
