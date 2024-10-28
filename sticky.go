@@ -24,6 +24,14 @@ type Note struct {
 
 const dbFilePath = "./sticky.db"
 
+const (
+	red    = "\x1b[31m"
+	green  = "\x1b[32m"
+	yellow = "\x1b[33m"
+	blue   = "\x1b[34m"
+	reset  = "\x1b[0m"
+)
+
 func initDb(path string) *sql.DB {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
@@ -121,8 +129,9 @@ func addNote(content string, db *sql.DB) {
 }
 
 func delNotes() {
-	str := "\x1b[31mThis operation will delete your entire notes database.\x1b[0m\n" +
-		"Type \"y\" to proceed, type anything else to cancel.\n\x1b[34m> \x1b[0m"
+	str := red + "This operation will delete your entire notes database.\n" + reset +
+		"Type \"y\" to proceed, type anything else to cancel.\n" +
+		blue + "> " + reset
 	fmt.Print(str)
 
 	var answer string
@@ -134,9 +143,9 @@ func delNotes() {
 
 	if answer == "y" {
 		os.Remove("./sticky.db")
-		fmt.Println("\x1b[33mSticky notes database deleted.\x1b[0m")
+		fmt.Println(yellow + "Sticky notes database deleted." + reset)
 	} else {
-		fmt.Println("\x1b[32mSticky notes database preserved.\x1b[0m")
+		fmt.Println(green + "Sticky notes database preserved." + reset)
 	}
 }
 
