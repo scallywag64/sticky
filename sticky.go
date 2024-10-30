@@ -204,11 +204,11 @@ func main() {
 		addNote(f.add, db)
 	case f.get != 0:
 		getNoteById(f.get, db)
-	case f.list != false:
+	case f.list:
 		listNotes(db)
 	case f.del != 0:
 		delNote(f.del, db)
-	case f.purge != false:
+	case f.purge:
 		delNotes()
 	default:
 		listNotes(db)
