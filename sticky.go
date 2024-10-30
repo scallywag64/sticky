@@ -129,7 +129,7 @@ func addNote(content string, db *sql.DB) {
 	fmt.Println("Successfully added note")
 }
 
-func delNotes() {
+func delNotes(dbPath string) {
 	str := red + "This operation will delete your entire notes database.\n" + reset +
 		"Type \"y\" to proceed, type anything else to cancel.\n" +
 		blue + "> " + reset
@@ -143,7 +143,7 @@ func delNotes() {
 	}
 
 	if answer == "y" {
-		os.Remove("./sticky.db")
+		os.Remove(dbPath)
 		fmt.Println(yellow + "Sticky notes database deleted." + reset)
 	} else {
 		fmt.Println(green + "Sticky notes database preserved." + reset)
@@ -209,7 +209,7 @@ func main() {
 	case f.del != 0:
 		delNote(f.del, db)
 	case f.purge:
-		delNotes()
+		delNotes(dbPath)
 	default:
 		listNotes(db)
 	}
