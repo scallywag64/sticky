@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
+	"path/filepath"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type flags struct {
@@ -22,8 +24,6 @@ type Note struct {
 	ID        int
 	Content   string
 }
-
-const dbFilePath = "./sticky.db"
 
 const (
 	red    = "\x1b[31m"
@@ -183,7 +183,17 @@ func main() {
 	flag.BoolVar(&f.purge, "purge", false, "delete notes database")
 	flag.Parse()
 
-	db := initDb(dbFilePath)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbPath := filepath.Join(homeDir, ".local", "share", "sticky", "sticky.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), os.ModePerm); err != nil {
+		log.Fatalf("Error creating directory: %v", err)
+	}
+
+	db := initDb(dbPath)
 	if db == nil {
 		log.Fatal("Failed to initialize the database")
 	}
