@@ -54,6 +54,9 @@ func getDbPath() string {
 func initDb() *sql.DB {
 	dbPath := getDbPath()
 
+	_, err := os.Stat(dbPath)
+	databaseExists := !os.IsNotExist(err)
+
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
@@ -66,10 +69,20 @@ func initDb() *sql.DB {
 		note TEXT
 	);
 	`
+
 	_, err = db.Exec(stmt)
 	if err != nil {
 		log.Printf("%q: %s\n", err, stmt)
 		return nil
+	}
+
+	if !databaseExists {
+
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Println(err)
+		}
+		fmt.Println(blue + "Created 'sticky.db' database at: " + wd + reset)
 	}
 
 	return db
