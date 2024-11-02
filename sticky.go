@@ -33,8 +33,28 @@ const (
 	reset  = "\x1b[0m"
 )
 
-func initDb(path string) *sql.DB {
-	db, err := sql.Open("sqlite3", path)
+func getDbPath() string {
+	dbPath := "./sticky.db"
+
+	if os.Getenv("STICKY_ENV") != "dev" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		dbPath = filepath.Join(homeDir, ".local", "share", "sticky", "sticky.db")
+		if err := os.MkdirAll(filepath.Dir(dbPath), os.ModePerm); err != nil {
+			log.Fatalf("Error creating directory: %v", err)
+		}
+	}
+
+	return dbPath
+}
+
+func initDb() *sql.DB {
+	dbPath := getDbPath()
+
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -129,7 +149,7 @@ func addNote(content string, db *sql.DB) {
 	fmt.Println("Successfully added note")
 }
 
-func delNotes(dbPath string) {
+func delNotes() {
 	str := red + "This operation will delete your entire notes database.\n" + reset +
 		"Type \"y\" to proceed, type anything else to cancel.\n" +
 		blue + "> " + reset
@@ -143,6 +163,7 @@ func delNotes(dbPath string) {
 	}
 
 	if answer == "y" {
+		dbPath := getDbPath()
 		os.Remove(dbPath)
 		fmt.Println(yellow + "Sticky notes database deleted." + reset)
 	} else {
@@ -183,17 +204,7 @@ func main() {
 	flag.BoolVar(&f.purge, "purge", false, "delete notes database")
 	flag.Parse()
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dbPath := filepath.Join(homeDir, ".local", "share", "sticky", "sticky.db")
-	if err := os.MkdirAll(filepath.Dir(dbPath), os.ModePerm); err != nil {
-		log.Fatalf("Error creating directory: %v", err)
-	}
-
-	db := initDb(dbPath)
+	db := initDb()
 	if db == nil {
 		log.Fatal("Failed to initialize the database")
 	}
@@ -209,7 +220,7 @@ func main() {
 	case f.del != 0:
 		delNote(f.del, db)
 	case f.purge:
-		delNotes(dbPath)
+		delNotes()
 	default:
 		listNotes(db)
 	}
