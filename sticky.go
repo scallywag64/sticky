@@ -36,7 +36,7 @@ const (
 func getDbPath() string {
 	dbPath := "./sticky.db"
 
-	if os.Getenv("ENV") != "dev" {
+	if os.Getenv("STICKY_ENV") != "dev" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			log.Fatal(err)
